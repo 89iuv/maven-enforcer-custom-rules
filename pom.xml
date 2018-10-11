@@ -6,7 +6,7 @@
 
     <groupId>io.github.89iuv</groupId>
     <artifactId>maven-enforcer-custom-rules</artifactId>
-    <version>1.0.0</version>
+    <version>1.1.0</version>
     <packaging>jar</packaging>
 
     <name>Maven Enforcer Custom Rules</name>
@@ -39,7 +39,7 @@
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
 
-        <enforcer.api.version>3.0.0-M2</enforcer.api.version>
+        <enforcer.api.version>1.4.1</enforcer.api.version>
         <maven.version>3.5.3</maven.version>
         <maven.source.plugin.version>3.0.1</maven.source.plugin.version>
         <maven.javadoc.plugin.version>3.0.1</maven.javadoc.plugin.version>
@@ -113,7 +113,7 @@
                 <executions>
                     <execution>
                         <id>sign-artifacts</id>
-                        <phase>verify</phase>
+                        <phase>deploy</phase>
                         <goals>
                             <goal>sign</goal>
                         </goals>

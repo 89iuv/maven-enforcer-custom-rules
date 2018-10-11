@@ -1,6 +1,8 @@
-package com.lazydash.maven.enforcer.custom.rules;
+package io.github.eniuv.maven.enforcer.custom.rules;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import org.apache.maven.enforcer.rule.api.EnforcerRule;
 import org.apache.maven.enforcer.rule.api.EnforcerRuleException;
@@ -17,6 +19,7 @@ import org.apache.maven.plugin.PluginResolutionException;
 import org.apache.maven.plugin.descriptor.MojoDescriptor;
 import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.project.MavenProject;
+import org.codehaus.plexus.component.configurator.expression.ExpressionEvaluationException;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.repository.RemoteRepository;
@@ -26,24 +29,63 @@ public class NonThreadSafePluginRule implements EnforcerRule {
     /**
      * Simple param. This rule will fail if the value is true.
      */
-    private boolean failOnError = false;
+    private boolean fail = true;
+    private boolean excludeMavenPlugins = true;
+    private List<Plugin> exclude = new ArrayList<>(0);
 
     public void execute(EnforcerRuleHelper helper) throws EnforcerRuleException {
         Log log = helper.getLog();
 
+        // exclude everything from org.apache.maven.plugins
+        if (excludeMavenPlugins) {
+            final Plugin mavenGroupPlugin = new Plugin();
+            mavenGroupPlugin.setGroupId("org.apache.maven.plugins");
+            exclude.add(mavenGroupPlugin);
+        }
+
+        exclude.forEach(
+                plugin -> {
+                    String logSkipPluginMessage = "NonThreadSafePluginRule: Exclude "
+                            + "\"" + plugin.getGroupId()
+                            + (plugin.getArtifactId() != null ? ":" + plugin.getArtifactId() : "")
+                            + (plugin.getVersion() != null ? ":" + plugin.getVersion() : "")
+                            + "\".";
+
+                    log.info(logSkipPluginMessage);
+                }
+        );
+
         try {
-            MavenProject project = helper.getComponent(MavenProject.class);
-            MavenSession session = helper.getComponent(MavenSession.class);
-            BuildPluginManager pluginManager = helper.getComponent(BuildPluginManager.class);
+            MavenProject project = (MavenProject) helper.evaluate("${project}");
+            MavenSession session = (MavenSession) helper.evaluate("${session}");
+            BuildPluginManager pluginManager = (BuildPluginManager) helper.getComponent(BuildPluginManager.class);
 
             final List<RemoteRepository> repositories = project.getRemotePluginRepositories();
             final RepositorySystemSession repositorySession = session.getRepositorySession();
 
-
+            boolean pass = true;
             final List<Plugin> plugins = project.getBuild().getPlugins();
             for (Plugin plugin : plugins) {
-                // skip maven plugins
-                if ("org.apache.maven.plugins".equals(plugin.getGroupId())) {
+                final Optional<Plugin> first = exclude.stream()
+                        .filter(excludePlugin -> {
+                                //if plugin is same as exclude plugin return true else return false
+                                if (excludePlugin.getGroupId() != null && !excludePlugin.getGroupId().equals(plugin.getGroupId())) {
+                                    return false;
+                                }
+
+                                if (excludePlugin.getArtifactId() != null && !excludePlugin.getArtifactId().equals(plugin.getArtifactId())) {
+                                    return false;
+                                }
+
+                                if (excludePlugin.getVersion() != null && !excludePlugin.getVersion().equals(plugin.getVersion())) {
+                                    return false;
+                                }
+
+                                return true;
+                            })
+                        .findFirst();
+
+                if (first.isPresent()) {
                     continue;
                 }
 
@@ -58,21 +100,24 @@ public class NonThreadSafePluginRule implements EnforcerRule {
                                     + ":" + plugin.getGroupId()
                                     + ":" + plugin.getVersion()
                                     + "\" " + "is not thread safe.");
-                            if (this.failOnError) {
-                                throw new EnforcerRuleException("Use of non thread safe plugins is not allowed.");
-                            }
+                            pass = false;
                         }
                     }
                 }
             }
 
-        } catch (ComponentLookupException
+            if (this.fail && !pass) {
+                throw new EnforcerRuleException("Use of non thread safe plugins is not allowed.");
+            }
+
+        } catch (ExpressionEvaluationException
+                | ComponentLookupException
                 | PluginNotFoundException
                 | InvalidPluginDescriptorException
                 | PluginDescriptorParsingException
                 | PluginResolutionException
                 | MojoNotFoundException e) {
-            throw new EnforcerRuleException(e.getMessage());
+            throw new EnforcerRuleException(e.getMessage(), e);
         }
     }
 
@@ -87,7 +132,7 @@ public class NonThreadSafePluginRule implements EnforcerRule {
      */
     public String getCacheId() {
         //no hash on boolean...only parameter so no hash is needed.
-        return "" + this.failOnError;
+        return "" + this.fail + this.excludeMavenPlugins + this.exclude.hashCode();
     }
 
     /**
