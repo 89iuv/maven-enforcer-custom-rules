@@ -18,8 +18,8 @@ import org.eclipse.aether.repository.RemoteRepository;
 
 public class PluginUtil {
 
-    public static List<String> getNonThreadSafeGoals(Plugin plugin, List<String> goals, BuildPluginManager pluginBuildManager,
-                                               List<RemoteRepository> repositories, RepositorySystemSession repositorySession)
+    public static List<String> getPluginNonThreadSafeGoals(Plugin plugin, List<String> goals, BuildPluginManager pluginBuildManager,
+                                                           List<RemoteRepository> repositories, RepositorySystemSession repositorySession)
             throws InvalidPluginDescriptorException, MojoNotFoundException, PluginResolutionException, PluginDescriptorParsingException, PluginNotFoundException {
         List<String> nonThreadSafeGoals = new ArrayList<>(0);
 

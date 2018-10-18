@@ -47,7 +47,7 @@ public class PluginUtilTest {
         Mockito.when(buildPluginManagerMock.getMojoDescriptor(plugin, "three", remoteRepositoryList, repositorySystemSessionMock)).thenReturn(threeOneMojoMock);
 
         // when
-        final List<String> nonThreadSafeGoals = PluginUtil.getNonThreadSafeGoals(plugin, goals, buildPluginManagerMock, remoteRepositoryList, repositorySystemSessionMock);
+        final List<String> nonThreadSafeGoals = PluginUtil.getPluginNonThreadSafeGoals(plugin, goals, buildPluginManagerMock, remoteRepositoryList, repositorySystemSessionMock);
 
         // then
         Assert.assertEquals(2, nonThreadSafeGoals.size());
@@ -292,7 +292,7 @@ public class PluginUtilTest {
      *
      * Underlying exception : java.lang.reflect.MalformedParameterizedTypeException
      *
-     * 	at io.github.eniuv.maven.enforcer.custom.rules.util.PluginUtilTest.getNonThreadSafeGoals(PluginUtilTest.java:44)
+     * 	at io.github.eniuv.maven.enforcer.custom.rules.util.PluginUtilTest.getPluginNonThreadSafeGoals(PluginUtilTest.java:44)
      * 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
      * 	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
      * 	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)

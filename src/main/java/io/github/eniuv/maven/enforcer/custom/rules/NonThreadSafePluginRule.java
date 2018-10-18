@@ -57,7 +57,7 @@ public class NonThreadSafePluginRule implements EnforcerRule {
                 }
 
                 final List<String> pluginGoals = PluginUtil.getPluginGoals(plugin);
-                final List<String> nonThreadSafeGoals = PluginUtil.getNonThreadSafeGoals(plugin, pluginGoals, pluginManager, repositories, repositorySession);
+                final List<String> nonThreadSafeGoals = PluginUtil.getPluginNonThreadSafeGoals(plugin, pluginGoals, pluginManager, repositories, repositorySession);
 
                 if (!nonThreadSafeGoals.isEmpty()) {
                     LogUtil.logErrorGoalsOfPluginAreNotThreadSafe(log, plugin, nonThreadSafeGoals);

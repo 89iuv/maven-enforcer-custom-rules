@@ -148,7 +148,7 @@ public class NonThreadSafePluginRuleTest {
 
         mavenProjectPlugins.add(pluginOne);
         PowerMockito.when(PluginUtil.getPluginGoals(pluginOne)).thenReturn(pluginOneGoals);
-        PowerMockito.when(PluginUtil.getNonThreadSafeGoals(pluginOne, pluginOneGoals, buildPluginManager, remoteRepositories, repositorySystemSession))
+        PowerMockito.when(PluginUtil.getPluginNonThreadSafeGoals(pluginOne, pluginOneGoals, buildPluginManager, remoteRepositories, repositorySystemSession))
                 .thenThrow(new MojoNotFoundException("one", new PluginDescriptor()));
 
         // when
@@ -169,7 +169,7 @@ public class NonThreadSafePluginRuleTest {
         mavenProjectPlugins.add(plugin);
 
         PowerMockito.when(PluginUtil.getPluginGoals(plugin)).thenReturn(goals);
-        PowerMockito.when(PluginUtil.getNonThreadSafeGoals(plugin, goals, buildPluginManager, remoteRepositories, repositorySystemSession)).thenReturn(nonThreadSafeGoals);
+        PowerMockito.when(PluginUtil.getPluginNonThreadSafeGoals(plugin, goals, buildPluginManager, remoteRepositories, repositorySystemSession)).thenReturn(nonThreadSafeGoals);
     }
 
 }
