@@ -1,4 +1,4 @@
-package io.github.eniuv.maven.enforcer.custom.rules.util;
+package io.github.eniuv.maven.enforcer.custom.rules.log;
 
 import java.util.Arrays;
 import java.util.List;

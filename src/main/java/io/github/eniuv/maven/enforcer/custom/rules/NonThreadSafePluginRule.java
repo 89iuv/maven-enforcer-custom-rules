@@ -21,17 +21,16 @@ import org.codehaus.plexus.component.repository.exception.ComponentLookupExcepti
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.repository.RemoteRepository;
 
-import io.github.eniuv.maven.enforcer.custom.rules.util.LogUtil;
-import io.github.eniuv.maven.enforcer.custom.rules.util.PluginUtil;
+import io.github.eniuv.maven.enforcer.custom.rules.log.LogUtil;
+import io.github.eniuv.maven.enforcer.custom.rules.plugin.PluginMatcher;
+import io.github.eniuv.maven.enforcer.custom.rules.plugin.PluginService;
 
 public class NonThreadSafePluginRule implements EnforcerRule {
-    private boolean fail = true;
-    private boolean excludeMavenPlugins = true;
-    private List<Plugin> exclude = new ArrayList<>(0);
-
-    public List<Plugin> getExclude() {
-        return exclude;
-    }
+    // all variables are accessed from enforcer plugin via reflection
+    // there is no point in making them private
+    boolean fail = true;
+    boolean excludeMavenPlugins = true;
+    List<Plugin> exclude = new ArrayList<>(0);
 
     public void execute(EnforcerRuleHelper helper) throws EnforcerRuleException {
         try {
@@ -41,6 +40,8 @@ public class NonThreadSafePluginRule implements EnforcerRule {
             final BuildPluginManager pluginManager = (BuildPluginManager) helper.getComponent(BuildPluginManager.class);
             final List<RemoteRepository> repositories = project.getRemotePluginRepositories();
             final RepositorySystemSession repositorySession = session.getRepositorySession();
+
+            final PluginService pluginService = getPluginService(pluginManager, repositories, repositorySession);
 
             if (excludeMavenPlugins) {
                 final Plugin mavenGroupPlugin = new Plugin();
@@ -52,13 +53,11 @@ public class NonThreadSafePluginRule implements EnforcerRule {
 
             boolean pass = true;
             for (Plugin plugin : project.getBuild().getPlugins()) {
-                if (PluginUtil.doesPluginMatchInList(plugin, exclude)) {
+                if (PluginMatcher.doesPluginMatchInList(plugin, exclude)) {
                     continue;
                 }
 
-                final List<String> pluginGoals = PluginUtil.getPluginGoals(plugin);
-                final List<String> nonThreadSafeGoals = PluginUtil.getPluginNonThreadSafeGoals(plugin, pluginGoals, pluginManager, repositories, repositorySession);
-
+                final List<String> nonThreadSafeGoals = pluginService.getNonThreadSafeGoals(plugin);
                 if (!nonThreadSafeGoals.isEmpty()) {
                     LogUtil.logErrorGoalsOfPluginAreNotThreadSafe(log, plugin, nonThreadSafeGoals);
                     pass = false;
@@ -90,5 +89,9 @@ public class NonThreadSafePluginRule implements EnforcerRule {
 
     public boolean isResultValid(EnforcerRule arg0) {
         return false;
+    }
+
+    PluginService getPluginService(BuildPluginManager pluginManager, List<RemoteRepository> repositories, RepositorySystemSession repositorySession) {
+        return new PluginService(pluginManager, repositories, repositorySession);
     }
 }
