@@ -21,6 +21,7 @@ import org.codehaus.plexus.component.repository.exception.ComponentLookupExcepti
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.repository.RemoteRepository;
 
+import io.github.eniuv.maven.enforcer.custom.rules.constants.ThreadSafePlugins;
 import io.github.eniuv.maven.enforcer.custom.rules.log.LogUtil;
 import io.github.eniuv.maven.enforcer.custom.rules.plugin.PluginMatcher;
 import io.github.eniuv.maven.enforcer.custom.rules.plugin.PluginService;
@@ -50,21 +51,9 @@ public class NonThreadSafePluginRule implements EnforcerRule {
             }
 
             exclude.forEach(plugin -> LogUtil.logInfoExcludePlugin(log, plugin));
+            final ThreadSafePlugins arePluginsThreadSafe = doesProjectHaveNonThreadSafePlugin(log, project, pluginService);
 
-            boolean pass = true;
-            for (Plugin plugin : project.getBuild().getPlugins()) {
-                if (PluginMatcher.doesPluginMatchInList(plugin, exclude)) {
-                    continue;
-                }
-
-                final List<String> nonThreadSafeGoals = pluginService.getNonThreadSafeGoals(plugin);
-                if (!nonThreadSafeGoals.isEmpty()) {
-                    LogUtil.logErrorGoalsOfPluginAreNotThreadSafe(log, plugin, nonThreadSafeGoals);
-                    pass = false;
-                }
-            }
-
-            if (this.fail && !pass) {
+            if (this.fail && arePluginsThreadSafe.equals(ThreadSafePlugins.NOT_ALL_PLUGINS_ARE_THREAD_SAFE)) {
                 throw new EnforcerRuleException("Use of non thread safe plugins is not allowed.");
             }
 
@@ -77,6 +66,23 @@ public class NonThreadSafePluginRule implements EnforcerRule {
                 | MojoNotFoundException e) {
             throw new EnforcerRuleException(e.getMessage(), e);
         }
+    }
+
+    private ThreadSafePlugins doesProjectHaveNonThreadSafePlugin(Log log, MavenProject project, PluginService pluginService) throws InvalidPluginDescriptorException, MojoNotFoundException, PluginResolutionException, PluginDescriptorParsingException, PluginNotFoundException {
+        ThreadSafePlugins arePluginsThreadSafe = ThreadSafePlugins.ALL_PLUGINS_ARE_THREAD_SAFE;
+        for (Plugin plugin : project.getBuild().getPlugins()) {
+            if (PluginMatcher.doesPluginMatchInList(plugin, exclude)) {
+                continue;
+            }
+
+            final List<String> nonThreadSafeGoals = pluginService.getNonThreadSafeGoals(plugin);
+            if (!nonThreadSafeGoals.isEmpty()) {
+                LogUtil.logErrorGoalsOfPluginAreNotThreadSafe(log, plugin, nonThreadSafeGoals);
+                arePluginsThreadSafe = ThreadSafePlugins.NOT_ALL_PLUGINS_ARE_THREAD_SAFE;
+            }
+        }
+
+        return arePluginsThreadSafe;
     }
 
     public String getCacheId() {
